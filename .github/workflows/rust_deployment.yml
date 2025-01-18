@@ -61,7 +61,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: umarhayat13/${{ github.repository }}/rust-axum-askama-htmx:latest
+          tags: umarhayat13/rust-axum-askama-htmx:latest
 
   # deploy:
   #   name: Deploy to DigitalOcean Kubernetes
