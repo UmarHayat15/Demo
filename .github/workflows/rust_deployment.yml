@@ -1,0 +1,88 @@
+name: Build and Deploy Rust App
+
+on:
+  push:
+    branches:
+      - main  # Adjust if your default branch is different
+
+jobs:
+  build:
+    name: Build Rust App
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Rust Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # Use an appropriate Node.js version
+
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --features sqlite
+
+      - name: Set Up Environment Variables
+        run: echo "DATABASE_URL=sqlite://data.db" >> $GITHUB_ENV
+
+      - name: Apply Database Migrations
+        run: |
+          sqlx database create
+          sqlx migrate run
+
+      - name: Build TailwindCSS Assets
+        working-directory: ./tailwind
+        run: |
+          npm install
+          npm run build-css-prod
+
+      - name: Build Rust App
+        run: cargo build --release
+
+      - name: Set Up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io  # Replace if using a different registry
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository }}/rust-axum-askama-htmx:latest
+
+  # deploy:
+  #   name: Deploy to DigitalOcean Kubernetes
+  #   runs-on: ubuntu-latest
+  #   needs: build
+
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v3
+
+  #     - name: Set Up Kubectl
+  #       uses: azure/setup-kubectl@v3
+  #       with:
+  #         version: 'latest'
+
+  #     - name: Set Up Kubeconfig
+  #       run: |
+  #         echo "${{ secrets.KUBECONFIG_CONTENT }}" > kubeconfig.yaml
+  #         export KUBECONFIG=kubeconfig.yaml
+
+  #     - name: Deploy to Kubernetes
+  #       run: |
+  #         kubectl set image deployment/rust-app rust-app=ghcr.io/${{ github.repository }}/rust-axum-askama-htmx:latest
+  #         kubectl rollout status deployment/rust-app
