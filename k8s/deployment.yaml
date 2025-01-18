@@ -5,7 +5,7 @@ metadata:
   labels:
     app: rust-axum-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: rust-axum-app
@@ -18,7 +18,7 @@ spec:
       - name: rust-axum-app
         image: umarhayat13/rust-axum-askama-htmx:latest
         ports:
-        - containerPort: 3000
+        - containerPort: 8081
         resources:
           limits:
             cpu: "1"
@@ -35,7 +35,7 @@ spec:
   type: LoadBalancer
   ports:
   - port: 80
-    targetPort: 3000
+    targetPort: 8081
     protocol: TCP
   selector:
     app: rust-axum-app
