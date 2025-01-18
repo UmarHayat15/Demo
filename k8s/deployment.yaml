@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rust-axum-app
+  labels:
+    app: rust-axum-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rust-axum-app
+  template:
+    metadata:
+      labels:
+        app: rust-axum-app
+    spec:
+      containers:
+      - name: rust-axum-app
+        image: umarhayat13/rust-axum-askama-htmx:latest
+        ports:
+        - containerPort: 3000
+        resources:
+          limits:
+            cpu: "1"
+            memory: "512Mi"
+          requests:
+            cpu: "0.5"
+            memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rust-axum-app-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+  selector:
+    app: rust-axum-app
